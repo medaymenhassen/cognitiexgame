@@ -13,6 +13,7 @@ const Home = () => {
 
     const startSpin = () => {
         if (isSpinning) return;
+
         if (betAmount <= 0 || !ExternalService.placeBet(selectedEvent, betAmount)) {
             alert("Invalid bet or insufficient funds");
             return;
@@ -30,18 +31,26 @@ const Home = () => {
         // Calculer l'angle exact pour aligner le numéro gagnant au centre de sa section
         const targetRotation =
             (360 - (winningIndex * sliceAngle) - sliceAngle / 2 - 90) % 360;
-        // Décalage supplémentaire : -sliceAngle / 2 pour centrer, -90 pour pointer en haut
-
         const finalRotation = randomRotations * 360 + targetRotation;
 
         const startTime = Date.now();
         const duration = 4000;
 
+        /**
+         * Fonction d'interpolation pour une transition fluide.
+         * Utilise une courbe "ease-in-out" pour accélérer au début et ralentir à la fin.
+         */
+        const easeInOutCubic = (t) =>
+            t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
         const animate = () => {
             const elapsedTime = Date.now() - startTime;
             const progress = Math.min(elapsedTime / duration, 1);
-            const easeOutProgress = 1 - Math.pow(1 - progress, 3);
-            const currentRotation = rotation + (finalRotation - rotation) * easeOutProgress;
+
+            // Appliquer la courbe d'accélération/décélération
+            const easedProgress = easeInOutCubic(progress);
+            const currentRotation =
+                rotation + (finalRotation - rotation) * easedProgress;
 
             setRotation(currentRotation);
 
@@ -70,9 +79,15 @@ const Home = () => {
                 />
                 <label className="text-white ml-4">Choose a number:</label>
                 <select value={selectedEvent} onChange={(e) => setSelectedEvent(e.target.value)} className="ml-2 p-1 border rounded">
-                    {elements.map(num => <option key={num} value={num}>{num}</option>)}
+                    {elements.map((num) => (
+                        <option key={num} value={num}>
+                            {num}
+                        </option>
+                    ))}
                 </select>
-                <button onClick={startSpin} className="ml-4 px-4 py-2 bg-blue-500 text-white rounded">Spin</button>
+                <button onClick={startSpin} className="ml-4 px-4 py-2 bg-blue-500 text-white rounded">
+                    Spin
+                </button>
             </div>
             <div className="relative flex justify-center items-center">
                 <svg viewBox="0 0 400 50" className="absolute top-[0px] left-1/2 transform -translate-x-1/2 rotate-180">
@@ -82,7 +97,7 @@ const Home = () => {
                     <g
                         style={{
                             transform: `rotate(${rotation}deg)`,
-                            transformOrigin: "200px 200px"
+                            transformOrigin: "200px 200px",
                         }}
                     >
                         <circle cx="200" cy="200" r="150" fill="black" stroke="gold" strokeWidth="5" />
